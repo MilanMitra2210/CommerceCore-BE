@@ -40,11 +40,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             extractJwtFromRequest(request)
                     .filter(tokenService::validateToken)
-                    .flatMap(tokenService::getEmailFromToken)
-                    .ifPresent(email -> {
-                        // Extract user role from token claims if needed. For now, we query the email.
-                        // When security roles are loaded from the token, we configure simple authorities.
-                        SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_USER");
+                    .flatMap(tokenService::getClaimsFromToken)
+                    .ifPresent(claims -> {
+                        String email = claims.getSubject();
+                        String role = claims.get("role", String.class);
+                        
+                        // Spring Security expects roles to start with 'ROLE_' prefix
+                        String authorityName = "ROLE_" + (role != null ? role : "USER");
+                        SimpleGrantedAuthority authority = new SimpleGrantedAuthority(authorityName);
                         
                         UsernamePasswordAuthenticationToken authentication =
                                 new UsernamePasswordAuthenticationToken(email, null, Collections.singletonList(authority));

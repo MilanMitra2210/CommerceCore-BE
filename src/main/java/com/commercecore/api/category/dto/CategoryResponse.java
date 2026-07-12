@@ -27,7 +27,7 @@ public class CategoryResponse {
     private Instant updatedAt;
     
     private SeoDto seo;
-    private List<Map<String, Object>> contentBlocks;
+    private List<com.commercecore.api.common.dto.ContentBlockDto> contentBlocks;
     private List<SubCategoryResponse> subCategories;
 
 }

@@ -1,5 +1,5 @@
 -- ==============================================================================
--- CommerceCore — Create SEO, Content Blocks, and Categories Tables
+-- CommerceCore — Create SEO, Categories, and Content Blocks Tables
 -- ==============================================================================
 
 CREATE TABLE seo_metadata (
@@ -11,11 +11,6 @@ CREATE TABLE seo_metadata (
     meta_image_id UUID -- Will reference media.id in the future
 );
 
-CREATE TABLE content_blocks (
-    id UUID PRIMARY KEY,
-    blocks JSONB NOT NULL DEFAULT '[]'::jsonb
-);
-
 CREATE TABLE categories (
     id UUID PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -25,7 +20,6 @@ CREATE TABLE categories (
     is_upcoming BOOLEAN NOT NULL DEFAULT FALSE,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     seo_id UUID,
-    content_blocks_id UUID,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
     created_by VARCHAR(100),
@@ -35,8 +29,7 @@ CREATE TABLE categories (
     deleted_at TIMESTAMP WITH TIME ZONE,
     CONSTRAINT uq_categories_name UNIQUE (name),
     CONSTRAINT uq_categories_slug UNIQUE (slug),
-    CONSTRAINT fk_categories_seo FOREIGN KEY (seo_id) REFERENCES seo_metadata(id) ON DELETE SET NULL,
-    CONSTRAINT fk_categories_content_blocks FOREIGN KEY (content_blocks_id) REFERENCES content_blocks(id) ON DELETE SET NULL
+    CONSTRAINT fk_categories_seo FOREIGN KEY (seo_id) REFERENCES seo_metadata(id) ON DELETE SET NULL
 );
 
 CREATE TABLE sub_categories (
@@ -48,7 +41,6 @@ CREATE TABLE sub_categories (
     display_order INTEGER NOT NULL DEFAULT 0,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     seo_id UUID,
-    content_blocks_id UUID,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
     created_by VARCHAR(100),
@@ -58,11 +50,22 @@ CREATE TABLE sub_categories (
     deleted_at TIMESTAMP WITH TIME ZONE,
     CONSTRAINT uq_sub_categories_slug UNIQUE (slug),
     CONSTRAINT fk_sub_categories_categories FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
-    CONSTRAINT fk_sub_categories_seo FOREIGN KEY (seo_id) REFERENCES seo_metadata(id) ON DELETE SET NULL,
-    CONSTRAINT fk_sub_categories_content_blocks FOREIGN KEY (content_blocks_id) REFERENCES content_blocks(id) ON DELETE SET NULL
+    CONSTRAINT fk_sub_categories_seo FOREIGN KEY (seo_id) REFERENCES seo_metadata(id) ON DELETE SET NULL
+);
+
+CREATE TABLE content_blocks (
+    id UUID PRIMARY KEY,
+    block_key VARCHAR(100) NOT NULL,
+    content JSONB NOT NULL,
+    category_id UUID,
+    subcategory_id UUID,
+    CONSTRAINT fk_content_blocks_categories FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
+    CONSTRAINT fk_content_blocks_sub_categories FOREIGN KEY (subcategory_id) REFERENCES sub_categories(id) ON DELETE CASCADE
 );
 
 -- Indexing for taxonomic lookup performance
 CREATE INDEX idx_categories_slug ON categories(slug);
 CREATE INDEX idx_sub_categories_slug ON sub_categories(slug);
 CREATE INDEX idx_sub_categories_category ON sub_categories(category_id);
+CREATE INDEX idx_content_blocks_category ON content_blocks(category_id);
+CREATE INDEX idx_content_blocks_subcategory ON content_blocks(subcategory_id);

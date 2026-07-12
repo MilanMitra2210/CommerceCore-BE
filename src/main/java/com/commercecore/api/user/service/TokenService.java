@@ -68,6 +68,22 @@ public class TokenService {
     }
 
     /**
+     * Parses and returns the entire claims payload from a validated token.
+     */
+    public Optional<Claims> getClaimsFromToken(String token) {
+        try {
+            Claims claims = Jwts.parser()
+                    .verifyWith(key)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+            return Optional.of(claims);
+        } catch (JwtException | IllegalArgumentException e) {
+            return Optional.empty();
+        }
+    }
+
+    /**
      * Validates if a token is structurally valid, has a correct signature,
      * and is not expired.
      */

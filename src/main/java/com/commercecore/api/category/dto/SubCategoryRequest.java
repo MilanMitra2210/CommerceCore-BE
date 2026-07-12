@@ -41,6 +41,7 @@ public class SubCategoryRequest {
     @Valid
     private SeoDto seo;
 
-    private List<Map<String, Object>> contentBlocks;
+    @Valid
+    private List<com.commercecore.api.common.dto.ContentBlockDto> contentBlocks;
 
 }

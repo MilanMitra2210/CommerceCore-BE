@@ -16,8 +16,8 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.SQLRestriction;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 /**
  * Entity representing a product category taxonomy.
@@ -52,12 +52,12 @@ public class Category extends BaseEntity {
     @JoinColumn(name = "seo_id")
     private SeoMetadata seo;
 
-    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @JoinColumn(name = "content_blocks_id")
-    private ContentBlock contentBlocks;
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private Set<ContentBlock> contentBlocks = new LinkedHashSet<>();
 
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @OrderBy("displayOrder ASC")
-    private List<SubCategory> subCategories = new ArrayList<>();
+    private Set<SubCategory> subCategories = new LinkedHashSet<>();
 
 }

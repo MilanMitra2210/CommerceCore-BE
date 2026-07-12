@@ -9,11 +9,15 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.SQLRestriction;
+
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 /**
  * Entity representing a sub-category taxonomy belonging to a parent Category.
@@ -47,8 +51,8 @@ public class SubCategory extends BaseEntity {
     @JoinColumn(name = "seo_id")
     private SeoMetadata seo;
 
-    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @JoinColumn(name = "content_blocks_id")
-    private ContentBlock contentBlocks;
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JoinColumn(name = "subcategory_id")
+    private Set<ContentBlock> contentBlocks = new LinkedHashSet<>();
 
 }

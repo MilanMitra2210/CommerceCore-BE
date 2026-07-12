@@ -11,16 +11,13 @@ import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 /**
- * Shared entity storing content blocks as a JSONB list of key-value structures.
+ * Normalized entity representing a content block component.
  *
- * <p>Content blocks allow storefront administrators to construct custom layouts
- * (banners, text blocks, grids) on categories and products.
+ * <p>Reusable across different domain models (Categories, Products, etc.).
  */
 @Entity
 @Table(name = "content_blocks")
@@ -33,8 +30,17 @@ public class ContentBlock {
     @Column(updatable = false, nullable = false, columnDefinition = "UUID")
     private UUID id;
 
+    @Column(name = "block_key", nullable = false, length = 100)
+    private String blockKey;
+
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "blocks", columnDefinition = "jsonb", nullable = false)
-    private List<Map<String, Object>> blocks = new ArrayList<>();
+    @Column(name = "content", columnDefinition = "jsonb", nullable = false)
+    private Map<String, Object> content;
+
+    @Column(name = "category_id")
+    private UUID categoryId;
+
+    @Column(name = "subcategory_id")
+    private UUID subcategoryId;
 
 }
