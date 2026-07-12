@@ -58,3 +58,12 @@ springdoc:
     path: /swagger-ui.html
     tags-sorter: alpha
     operations-sorter: alpha
+
+# ---- Custom Application Properties ----
+app:
+  jwt:
+    # Fallback key generated for local development. In production, this must be set via environment variable.
+    secret: ${JWT_SECRET:dGhpcy1pcy1hLXNlY3JldC1rZXktZm9yLWNvbW1lcmNlY29yZS1iYWNrZW5kLXBsYXRmb3JtLWRldmVsb3BtZW50LXVzZQ==}
+    expiration-ms: ${JWT_ACCESS_EXPIRATION_MS:900000}        # 15 minutes
+    refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000} # 7 days
+
