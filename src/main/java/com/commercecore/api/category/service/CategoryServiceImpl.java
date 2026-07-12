@@ -60,7 +60,16 @@ public class CategoryServiceImpl implements CategoryService {
         }
 
         Category category = categoryMapper.toEntity(request);
+        
         Category savedCategory = categoryRepository.save(category);
+        
+        if (savedCategory.getContentBlocks() != null) {
+            for (ContentBlock block : savedCategory.getContentBlocks()) {
+                block.setCategoryId(savedCategory.getId());
+            }
+            savedCategory = categoryRepository.save(savedCategory);
+        }
+        
         return categoryMapper.toResponse(savedCategory);
     }
 
@@ -105,16 +114,15 @@ public class CategoryServiceImpl implements CategoryService {
         }
 
         // Update Content Blocks
+        category.getContentBlocks().clear();
         if (request.getContentBlocks() != null) {
-            if (category.getContentBlocks() == null) {
+            for (com.commercecore.api.common.dto.ContentBlockDto dto : request.getContentBlocks()) {
                 ContentBlock block = new ContentBlock();
-                block.setBlocks(request.getContentBlocks());
-                category.setContentBlocks(block);
-            } else {
-                category.getContentBlocks().setBlocks(request.getContentBlocks());
+                block.setBlockKey(dto.getBlockKey());
+                block.setContent(dto.getContent());
+                block.setCategoryId(category.getId());
+                category.getContentBlocks().add(block);
             }
-        } else {
-            category.setContentBlocks(null);
         }
 
         Category updatedCategory = categoryRepository.save(category);
@@ -174,6 +182,14 @@ public class CategoryServiceImpl implements CategoryService {
         subCategory.setCategory(parent);
 
         SubCategory savedSubCategory = subCategoryRepository.save(subCategory);
+        
+        if (savedSubCategory.getContentBlocks() != null) {
+            for (ContentBlock block : savedSubCategory.getContentBlocks()) {
+                block.setSubcategoryId(savedSubCategory.getId());
+            }
+            savedSubCategory = subCategoryRepository.save(savedSubCategory);
+        }
+        
         return categoryMapper.toResponse(savedSubCategory);
     }
 
@@ -216,16 +232,15 @@ public class CategoryServiceImpl implements CategoryService {
         }
 
         // Update Content Blocks
+        subCategory.getContentBlocks().clear();
         if (request.getContentBlocks() != null) {
-            if (subCategory.getContentBlocks() == null) {
+            for (com.commercecore.api.common.dto.ContentBlockDto dto : request.getContentBlocks()) {
                 ContentBlock block = new ContentBlock();
-                block.setBlocks(request.getContentBlocks());
-                subCategory.setContentBlocks(block);
-            } else {
-                subCategory.getContentBlocks().setBlocks(request.getContentBlocks());
+                block.setBlockKey(dto.getBlockKey());
+                block.setContent(dto.getContent());
+                block.setSubcategoryId(subCategory.getId());
+                subCategory.getContentBlocks().add(block);
             }
-        } else {
-            subCategory.setContentBlocks(null);
         }
 
         SubCategory updated = subCategoryRepository.save(subCategory);
