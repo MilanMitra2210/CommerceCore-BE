@@ -36,10 +36,11 @@ public class CategoryController {
     @Operation(summary = "List categories", description = "Returns a paginated list of categories sorted by display order")
     public ResponseEntity<ApiResponse<PaginatedResponse<CategoryResponse>>> getCategories(
             @RequestParam(required = false) String search,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int limit) {
 
-        Pageable pageable = PageRequest.of(page, limit, Sort.by("displayOrder").ascending());
+        int pageIndex = page > 0 ? page - 1 : 0;
+        Pageable pageable = PageRequest.of(pageIndex, limit, Sort.by("displayOrder").ascending());
         Page<CategoryResponse> categories = categoryService.getCategories(search, pageable);
 
         return ResponseEntity.ok(
@@ -59,9 +60,25 @@ public class CategoryController {
     @GetMapping("/subcategories/{slug}")
     @Operation(summary = "Get subcategory by slug", description = "Retrieves subcategory page layouts and SEO metadata")
     public ResponseEntity<ApiResponse<SubCategoryResponse>> getSubCategoryBySlug(@PathVariable String slug) {
-        SubCategoryResponse subCategory = categoryService.getSubCategoryBySlug(slug);
+        SubCategoryResponse subcategory = categoryService.getSubCategoryBySlug(slug);
         return ResponseEntity.ok(
-                ApiResponse.success("Subcategory retrieved successfully", subCategory)
+                ApiResponse.success("Subcategory retrieved successfully", subcategory)
+        );
+    }
+
+    @GetMapping("/all/sub-categories")
+    @Operation(summary = "List all subcategories", description = "Storefront listing helper mapping")
+    public ResponseEntity<ApiResponse<PaginatedResponse<SubCategoryResponse>>> getAllSubCategories(
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int limit) {
+
+        int pageIndex = page > 0 ? page - 1 : 0;
+        Pageable pageable = PageRequest.of(pageIndex, limit, Sort.by("displayOrder").ascending());
+        Page<SubCategoryResponse> subcategories = categoryService.getSubCategories(search, pageable);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Subcategories retrieved successfully", PaginatedResponse.from(subcategories))
         );
     }
 
