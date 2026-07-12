@@ -1,6 +1,8 @@
 package com.commercecore.api.category.dto;
 
 import com.commercecore.api.common.dto.SeoDto;
+import com.commercecore.api.common.dto.ContentBlockDto;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -22,11 +24,12 @@ public class SubCategoryResponse {
     private String slug;
     private String description;
     private int displayOrder;
+    @JsonProperty("isActive")
     private boolean active;
     private Instant createdAt;
     private Instant updatedAt;
 
     private SeoDto seo;
-    private List<com.commercecore.api.common.dto.ContentBlockDto> contentBlocks;
+    private List<ContentBlockDto> contentBlocks;
 
 }

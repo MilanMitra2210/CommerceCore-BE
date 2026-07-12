@@ -1,6 +1,8 @@
 package com.commercecore.api.category.dto;
 
 import com.commercecore.api.common.dto.SeoDto;
+import com.commercecore.api.common.dto.ContentBlockDto;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -33,12 +35,13 @@ public class CategoryRequest {
 
     private boolean upcoming = false;
 
+    @JsonProperty("isActive")
     private boolean active = true;
 
     @Valid
     private SeoDto seo;
 
     @Valid
-    private List<com.commercecore.api.common.dto.ContentBlockDto> contentBlocks;
+    private List<ContentBlockDto> contentBlocks;
 
 }

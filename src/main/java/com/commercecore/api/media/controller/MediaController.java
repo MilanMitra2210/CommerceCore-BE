@@ -20,6 +20,10 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.commercecore.api.media.dto.BulkMoveRequest;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
@@ -113,11 +117,11 @@ public class MediaController {
         return ResponseEntity.ok(ApiResponse.success("Folder deleted successfully"));
     }
 
-    @org.springframework.web.bind.annotation.PatchMapping("/bulk-move")
+    @PatchMapping("/bulk-move")
     @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Bulk move media files to a folder")
     public ResponseEntity<ApiResponse<Void>> bulkMoveMedia(
-            @org.springframework.web.bind.annotation.RequestBody com.commercecore.api.media.dto.BulkMoveRequest request) {
+            @RequestBody BulkMoveRequest request) {
         mediaService.moveMedia(request.getMediaIds(), request.getFolderId());
         return ResponseEntity.ok(ApiResponse.success("Media files moved successfully"));
     }
