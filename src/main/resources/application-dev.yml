@@ -1,0 +1,36 @@
+# ==============================================================================
+# CommerceCore API — Development Profile
+# ==============================================================================
+
+spring:
+  # ---- PostgreSQL ----
+  datasource:
+    url: jdbc:postgresql://localhost:5433/commercecore_db
+    username: commercecore
+    password: commercecore_secret
+    driver-class-name: org.postgresql.Driver
+
+  # ---- JPA ----
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: validate
+
+  # ---- Redis ----
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+# ---- Logging ----
+logging:
+  level:
+    com.commercecore: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+# ---- CORS ----
+app:
+  cors:
+    allowed-origins: http://localhost:3002,http://localhost:5173

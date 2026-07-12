@@ -1,0 +1,20 @@
+-- ==============================================================================
+-- CommerceCore — Flyway Baseline Migration
+-- ==============================================================================
+-- This is the baseline migration establishing Flyway's version tracking.
+-- Actual table schemas will be created as feature modules are built.
+--
+-- Convention: V{version}__{description}.sql
+--   - Version: sequential integer (V1, V2, V3...)
+--   - Description: snake_case summary of what the migration does
+--   - Double underscore between version and description
+--
+-- Rules:
+--   1. Migrations are IMMUTABLE — never edit a migration after it's been applied
+--   2. Always test migrations locally before committing
+--   3. Each migration should be idempotent where possible
+--   4. Use IF NOT EXISTS / IF EXISTS guards for safety
+-- ==============================================================================
+
+-- Baseline: no tables created yet.
+-- This file exists to establish the flyway_schema_history table.
