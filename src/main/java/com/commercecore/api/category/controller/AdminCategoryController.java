@@ -103,10 +103,11 @@ public class AdminCategoryController {
     @Operation(summary = "List all subcategories", description = "Returns a paginated list of subcategories for admin grid views")
     public ResponseEntity<ApiResponse<PaginatedResponse<SubCategoryResponse>>> getSubCategories(
             @RequestParam(required = false) String search,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int limit) {
 
-        Pageable pageable = PageRequest.of(page, limit, Sort.by("displayOrder").ascending());
+        int pageIndex = page > 0 ? page - 1 : 0;
+        Pageable pageable = PageRequest.of(pageIndex, limit, Sort.by("displayOrder").ascending());
         Page<SubCategoryResponse> subcategories = categoryService.getSubCategories(search, pageable);
 
         return ResponseEntity.ok(

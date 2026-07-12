@@ -43,6 +43,9 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/uploads/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/uploads/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/uploads/**").hasRole("ADMIN")
                         .anyRequest().permitAll())
                 .addFilterBefore(jwtAuthenticationFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
 

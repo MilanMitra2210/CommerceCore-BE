@@ -34,6 +34,16 @@ spring:
       fail-on-unknown-properties: false
     default-property-inclusion: non_null
 
+  # ---- Multipart Upload Limits ----
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 50MB
+      max-request-size: 100MB
+  mvc:
+    multipart:
+      resolve-lazily: true
+
 # ---- Server ----
 server:
   port: 8080
