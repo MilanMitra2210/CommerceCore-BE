@@ -59,7 +59,20 @@ public class PaginatedResponse<T> {
 
         return PaginatedResponse.<D>builder()
                 .items(springPage.getContent().stream().map(mapper).toList())
-                .page(springPage.getNumber() + 1)  // Convert 0-indexed to 1-indexed
+                .page(springPage.getNumber() + 1)
+                .limit(springPage.getSize())
+                .total(springPage.getTotalElements())
+                .totalPages(springPage.getTotalPages())
+                .build();
+    }
+
+    /**
+     * Creates a PaginatedResponse from a pre-mapped Spring Data {@link org.springframework.data.domain.Page}.
+     */
+    public static <T> PaginatedResponse<T> from(org.springframework.data.domain.Page<T> springPage) {
+        return PaginatedResponse.<T>builder()
+                .items(springPage.getContent())
+                .page(springPage.getNumber() + 1) 
                 .limit(springPage.getSize())
                 .total(springPage.getTotalElements())
                 .totalPages(springPage.getTotalPages())
