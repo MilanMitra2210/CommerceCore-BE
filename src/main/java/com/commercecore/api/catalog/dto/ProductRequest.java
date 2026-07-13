@@ -1,6 +1,7 @@
 package com.commercecore.api.catalog.dto;
 
 import com.commercecore.api.common.dto.SeoDto;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -36,9 +37,15 @@ public class ProductRequest {
 
     private String description;
 
+    @JsonProperty("isBestseller")
     private boolean bestseller = false;
+
+    @JsonProperty("isFeatured")
     private boolean featured = false;
+
+    @JsonProperty("isActive")
     private boolean active = true;
+
     private int displayOrder = 0;
 
     @Valid

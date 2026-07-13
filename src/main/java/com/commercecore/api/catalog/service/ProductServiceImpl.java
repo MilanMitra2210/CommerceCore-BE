@@ -28,6 +28,8 @@ import com.commercecore.api.category.repository.CategoryRepository;
 import com.commercecore.api.category.repository.SubCategoryRepository;
 import com.commercecore.api.common.entity.ContentBlock;
 import com.commercecore.api.common.entity.SeoMetadata;
+import com.commercecore.api.media.entity.Media;
+import com.commercecore.api.media.repository.MediaRepository;
 import com.commercecore.api.common.exception.DuplicateResourceException;
 import com.commercecore.api.common.exception.ResourceNotFoundException;
 import com.commercecore.api.common.mapper.SeoMapper;
@@ -61,6 +63,7 @@ public class ProductServiceImpl implements ProductService {
     private final ProductMapper productMapper;
     private final ProductVariantMapper productVariantMapper;
     private final SeoMapper seoMapper;
+    private final MediaRepository mediaRepository;
 
     public ProductServiceImpl(
             ProductRepository productRepository,
@@ -72,7 +75,8 @@ public class ProductServiceImpl implements ProductService {
             FilterGroupRepository filterGroupRepository,
             ProductMapper productMapper,
             ProductVariantMapper productVariantMapper,
-            SeoMapper seoMapper) {
+            SeoMapper seoMapper,
+            MediaRepository mediaRepository) {
         this.productRepository = productRepository;
         this.productVariantRepository = productVariantRepository;
         this.categoryRepository = categoryRepository;
@@ -83,6 +87,7 @@ public class ProductServiceImpl implements ProductService {
         this.productMapper = productMapper;
         this.productVariantMapper = productVariantMapper;
         this.seoMapper = seoMapper;
+        this.mediaRepository = mediaRepository;
     }
 
     @Override
@@ -155,6 +160,10 @@ public class ProductServiceImpl implements ProductService {
                     for (var mediaDto : varDto.getMedia()) {
                         VariantMedia media = productVariantMapper.toMediaEntity(mediaDto);
                         media.setVariant(variant);
+                        if (mediaDto.getMediaId() != null) {
+                            media.setMedia(mediaRepository.findById(mediaDto.getMediaId())
+                                    .orElseThrow(() -> new ResourceNotFoundException("Media", mediaDto.getMediaId())));
+                        }
                         variant.getMedia().add(media);
                     }
                 }
@@ -301,6 +310,10 @@ public class ProductServiceImpl implements ProductService {
                     for (var mediaDto : varDto.getMedia()) {
                         VariantMedia media = productVariantMapper.toMediaEntity(mediaDto);
                         media.setVariant(variant);
+                        if (mediaDto.getMediaId() != null) {
+                            media.setMedia(mediaRepository.findById(mediaDto.getMediaId())
+                                    .orElseThrow(() -> new ResourceNotFoundException("Media", mediaDto.getMediaId())));
+                        }
                         variant.getMedia().add(media);
                     }
                 }
@@ -407,11 +420,13 @@ public class ProductServiceImpl implements ProductService {
             List<ProductVariant> variants = new ArrayList<>(product.getVariants());
             List<ProductVariantDto> variantDtos = response.getVariants();
 
-            for (int i = 0; i < variants.size(); i++) {
-                ProductVariant entity = variants.get(i);
-                ProductVariantDto dto = variantDtos.get(i);
+            for (ProductVariantDto dto : variantDtos) {
+                ProductVariant entity = variants.stream()
+                        .filter(v -> v.getSku() != null && v.getSku().equals(dto.getSku()))
+                        .findFirst()
+                        .orElse(null);
 
-                if (entity.getAttributeValues() != null) {
+                if (entity != null && entity.getAttributeValues() != null) {
                     List<VariantAttributeSelectionDto> attributeSelections = entity.getAttributeValues().stream()
                             .map(v -> {
                                 VariantAttributeSelectionDto sel = new VariantAttributeSelectionDto();

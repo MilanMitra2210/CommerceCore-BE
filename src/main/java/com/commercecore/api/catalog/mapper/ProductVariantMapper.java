@@ -26,6 +26,7 @@ public interface ProductVariantMapper {
     @Mapping(target = "dimensions.unit", source = "dimensionUnit")
     @Mapping(target = "attributeValues", ignore = true)
     @Mapping(target = "product", ignore = true)
+    @Mapping(target = "media", ignore = true)
     ProductVariant toEntity(ProductVariantDto dto);
 
     // Media mapping helpers

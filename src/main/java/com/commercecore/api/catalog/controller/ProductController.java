@@ -42,10 +42,10 @@ public class ProductController {
     @Operation(summary = "List and search products", description = "Returns a paginated list of catalog products")
     public ResponseEntity<ApiResponse<PaginatedResponse<ProductResponse>>> getProducts(
             @RequestParam(required = false) String search,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "12") int limit) {
 
-        Pageable pageable = PageRequest.of(page, limit, Sort.by("displayOrder").ascending());
+        Pageable pageable = PageRequest.of(page > 0 ? page - 1 : 0, limit, Sort.by("displayOrder").ascending());
         Page<ProductResponse> products = productService.getProducts(search, pageable);
 
         return ResponseEntity.ok(
@@ -66,10 +66,10 @@ public class ProductController {
     @Operation(summary = "List products by category", description = "Returns products belonging to a category scope")
     public ResponseEntity<ApiResponse<PaginatedResponse<ProductResponse>>> getProductsByCategory(
             @PathVariable UUID categoryId,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "12") int limit) {
 
-        Pageable pageable = PageRequest.of(page, limit, Sort.by("displayOrder").ascending());
+        Pageable pageable = PageRequest.of(page > 0 ? page - 1 : 0, limit, Sort.by("displayOrder").ascending());
         Page<ProductResponse> products = productService.getProductsByCategory(categoryId, pageable);
 
         return ResponseEntity.ok(
@@ -81,10 +81,10 @@ public class ProductController {
     @Operation(summary = "List products by subcategory")
     public ResponseEntity<ApiResponse<PaginatedResponse<ProductResponse>>> getProductsBySubCategory(
             @PathVariable UUID subCategoryId,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "12") int limit) {
 
-        Pageable pageable = PageRequest.of(page, limit, Sort.by("displayOrder").ascending());
+        Pageable pageable = PageRequest.of(page > 0 ? page - 1 : 0, limit, Sort.by("displayOrder").ascending());
         Page<ProductResponse> products = productService.getProductsBySubCategory(subCategoryId, pageable);
 
         return ResponseEntity.ok(

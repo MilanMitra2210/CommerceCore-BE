@@ -1,5 +1,6 @@
 package com.commercecore.api.catalog.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -49,8 +50,13 @@ public class ProductVariantDto {
     private Map<String, Object> size;
 
     private boolean isDefault = false;
+
+    @JsonProperty("isActive")
     private boolean active = true;
+
+    @JsonProperty("isPurchasable")
     private boolean purchasable = true;
+
     private int displayOrder = 0;
 
     // Attribute mapping values list: e.g. [{"attributeSlug": "color", "valueSlug": "beige"}]
@@ -58,5 +64,32 @@ public class ProductVariantDto {
 
     // Associated media file UUIDs
     private List<VariantMediaDto> media;
+
+    @JsonProperty("dimensions")
+    public Map<String, Object> retrieveDimensions() {
+        java.util.HashMap<String, Object> map = new java.util.HashMap<>();
+        map.put("width", dimensionWidth);
+        map.put("height", dimensionHeight);
+        map.put("depth", dimensionLength);
+        return map;
+    }
+
+    @JsonProperty("dimensions")
+    public void populateDimensions(Map<String, Object> dimensions) {
+        if (dimensions != null) {
+            this.dimensionWidth = parseBigDecimal(dimensions.get("width"));
+            this.dimensionHeight = parseBigDecimal(dimensions.get("height"));
+            this.dimensionLength = parseBigDecimal(dimensions.get("depth"));
+        }
+    }
+
+    private BigDecimal parseBigDecimal(Object value) {
+        if (value == null || value.toString().isBlank()) return null;
+        try {
+            return new BigDecimal(value.toString());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
 
 }

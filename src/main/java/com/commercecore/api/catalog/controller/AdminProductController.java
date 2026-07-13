@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -37,10 +38,18 @@ public class AdminProductController {
 
     @PostMapping
     @Operation(summary = "Create product", description = "Creates a parent product along with nested variants, badges, and specification tabs")
-    public ResponseEntity<ApiResponse<ProductResponse>> createProduct(@RequestBody @Valid ProductRequest request) {
+    public ResponseEntity<ApiResponse<ProductResponse>> createProduct(
+            @RequestBody @Valid ProductRequest request) {
         ProductResponse response = productService.createProduct(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Product created successfully", response));
+    }
+
+    @GetMapping("/{id}")
+    @Operation(summary = "Get product by ID", description = "Fetches a product catalog record by database UUID")
+    public ResponseEntity<ApiResponse<ProductResponse>> getProductById(@PathVariable UUID id) {
+        ProductResponse response = productService.getProductById(id);
+        return ResponseEntity.ok(ApiResponse.success("Product retrieved successfully", response));
     }
 
     @PutMapping("/{id}")
