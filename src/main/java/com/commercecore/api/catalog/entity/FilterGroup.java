@@ -1,6 +1,7 @@
 package com.commercecore.api.catalog.entity;
 
 import com.commercecore.api.category.entity.Category;
+import com.commercecore.api.category.entity.SubCategory;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -37,6 +38,10 @@ public class FilterGroup {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sub_category_id")
+    private SubCategory subCategory;
 
     @Column(name = "filter_key", nullable = false, length = 100)
     private String filterKey;
