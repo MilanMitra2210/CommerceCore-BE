@@ -43,4 +43,7 @@ public class ContentBlock {
     @Column(name = "subcategory_id")
     private UUID subcategoryId;
 
+    @Column(name = "page_id")
+    private UUID pageId;
+
 }
