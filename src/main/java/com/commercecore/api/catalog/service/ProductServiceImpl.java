@@ -4,6 +4,7 @@ import com.commercecore.api.catalog.dto.ProductRequest;
 import com.commercecore.api.catalog.dto.ProductResponse;
 import com.commercecore.api.catalog.dto.ProductVariantDto;
 import com.commercecore.api.catalog.dto.VariantAttributeSelectionDto;
+import java.util.Optional;
 import com.commercecore.api.catalog.entity.Attribute;
 import com.commercecore.api.catalog.entity.AttributeValue;
 import com.commercecore.api.catalog.entity.Badge;
@@ -147,7 +148,25 @@ public class ProductServiceImpl implements ProductService {
 
         // Map and save Product Variants
         if (request.getVariants() != null) {
+            log.info("Processing {} variants", request.getVariants().size());
             for (ProductVariantDto varDto : request.getVariants()) {
+                log.info("Variant SKU={}, colorName={}, colorHex={}, media={}, attributeSelections={}",
+                        varDto.getSku(),
+                        varDto.getColorName(),
+                        varDto.getColorHex(),
+                        varDto.getMedia() != null ? varDto.getMedia().size() : "null",
+                        varDto.getAttributeSelections() != null ? varDto.getAttributeSelections().size() : "null");
+                if (varDto.getAttributeSelections() != null) {
+                    for (var sel : varDto.getAttributeSelections()) {
+                        log.info("  Attribute: slug={}, valueSlug={}, value={}, label={}, colorHex={}",
+                                sel.getAttributeSlug(), sel.getValueSlug(), sel.getValue(), sel.getLabel(), sel.getColorHex());
+                    }
+                }
+                if (varDto.getMedia() != null) {
+                    for (var m : varDto.getMedia()) {
+                        log.info("  Media: mediaId={}, role={}, displayOrder={}", m.getMediaId(), m.getRole(), m.getDisplayOrder());
+                    }
+                }
                 if (productVariantRepository.existsBySku(varDto.getSku())) {
                     throw new DuplicateResourceException("ProductVariant", "sku", varDto.getSku());
                 }
@@ -169,15 +188,33 @@ public class ProductServiceImpl implements ProductService {
                 }
 
                 // Bind dynamic AttributeSelection values
+                List<VariantAttributeSelectionDto> allSelections = new ArrayList<>();
                 if (varDto.getAttributeSelections() != null) {
-                    for (VariantAttributeSelectionDto selDto : varDto.getAttributeSelections()) {
-                        Attribute attr = attributeRepository.findBySlug(selDto.getAttributeSlug())
-                                .orElseThrow(() -> new ResourceNotFoundException("Attribute", "slug", selDto.getAttributeSlug()));
-                        
-                        AttributeValue attrVal = attr.getValues().stream()
-                                .filter(v -> v.getSlug().equals(selDto.getValueSlug()))
-                                .findFirst()
-                                .orElseThrow(() -> new ResourceNotFoundException("AttributeValue", "slug", selDto.getValueSlug()));
+                    allSelections.addAll(varDto.getAttributeSelections());
+                }
+
+                // Append color selection if colorName flat property is present
+                if (varDto.getColorName() != null && !varDto.getColorName().trim().isEmpty()) {
+                    VariantAttributeSelectionDto colorSel = new VariantAttributeSelectionDto();
+                    colorSel.setAttributeSlug("color");
+                    colorSel.setAttributeName("Color");
+                    colorSel.setValue(varDto.getColorName());
+                    colorSel.setLabel(varDto.getColorName());
+                    colorSel.setValueSlug(slugify(varDto.getColorName()));
+                    colorSel.setColorHex(varDto.getColorHex());
+                    allSelections.add(colorSel);
+                }
+
+                if (!allSelections.isEmpty()) {
+                    for (VariantAttributeSelectionDto selDto : allSelections) {
+                        AttributeValue attrVal = resolveOrCreateAttributeValue(
+                                selDto.getAttributeSlug(),
+                                selDto.getValueSlug(),
+                                selDto.getLabel(),
+                                selDto.getValue(),
+                                selDto.getColorHex()
+                        );
+                        Attribute attr = attrVal.getAttribute();
 
                         VariantAttributeValue vav = new VariantAttributeValue();
                         vav.setVariant(variant);
@@ -299,44 +336,165 @@ public class ProductServiceImpl implements ProductService {
             }
         }
 
-        // Update Variants list
-        product.getVariants().clear();
+        // Update Variants list (merge to avoid unique constraint violations on flush)
+        List<ProductVariant> incomingVariants = new ArrayList<>();
         if (request.getVariants() != null) {
             for (ProductVariantDto varDto : request.getVariants()) {
-                ProductVariant variant = productVariantMapper.toEntity(varDto);
-                variant.setProduct(product);
+                ProductVariant variant = null;
+                // Check if SKU is already taken by another variant
+                Optional<ProductVariant> existingWithSku = productVariantRepository.findBySku(varDto.getSku());
+                if (existingWithSku.isPresent()) {
+                    if (varDto.getId() == null || !existingWithSku.get().getId().equals(varDto.getId())) {
+                        throw new DuplicateResourceException("ProductVariant", "sku", varDto.getSku());
+                    }
+                }
+
+                if (varDto.getSku() != null) {
+                    variant = product.getVariants().stream()
+                            .filter(v -> varDto.getSku().equals(v.getSku()))
+                            .findFirst()
+                            .orElse(null);
+                }
+
+                if (variant == null) {
+                    if (productVariantRepository.existsBySku(varDto.getSku())) {
+                        throw new DuplicateResourceException("ProductVariant", "sku", varDto.getSku());
+                    }
+                    variant = productVariantMapper.toEntity(varDto);
+                    variant.setProduct(product);
+                } else {
+                    // Update existing variant fields
+                    variant.setSku(varDto.getSku());
+                    variant.setBarcode(varDto.getBarcode());
+                    variant.setTitle(varDto.getTitle());
+                    variant.setPrice(varDto.getPrice());
+                    variant.setCompareAtPrice(varDto.getCompareAtPrice());
+                    variant.setCostPrice(varDto.getCostPrice());
+                    variant.setCurrencyCode(varDto.getCurrencyCode() != null ? varDto.getCurrencyCode() : "INR");
+                    variant.setInventoryQuantity(varDto.getInventoryQuantity());
+                    variant.setLowStockThreshold(varDto.getLowStockThreshold());
+                    variant.setAllowBackorder(varDto.isAllowBackorder());
+                    variant.setWeightValue(varDto.getWeightValue());
+                    variant.setWeightUnit(varDto.getWeightUnit());
+                    variant.setDefault(varDto.isDefault());
+                    variant.setActive(varDto.isActive());
+                    variant.setPurchasable(varDto.isPurchasable());
+                    variant.setDisplayOrder(varDto.getDisplayOrder());
+
+                    // Dimensions
+                    if (varDto.getDimensionLength() != null || varDto.getDimensionWidth() != null || varDto.getDimensionHeight() != null) {
+                        if (variant.getDimensions() == null) {
+                            variant.setDimensions(new com.commercecore.api.catalog.entity.VariantDimensions());
+                        }
+                        variant.getDimensions().setLength(varDto.getDimensionLength());
+                        variant.getDimensions().setWidth(varDto.getDimensionWidth());
+                        variant.getDimensions().setHeight(varDto.getDimensionHeight());
+                        variant.getDimensions().setUnit(varDto.getDimensionUnit());
+                    } else {
+                        variant.setDimensions(null);
+                    }
+                }
 
                 if (varDto.getMedia() != null) {
+                    List<VariantMedia> incomingMedia = new ArrayList<>();
                     for (var mediaDto : varDto.getMedia()) {
-                        VariantMedia media = productVariantMapper.toMediaEntity(mediaDto);
-                        media.setVariant(variant);
+                        VariantMedia m = productVariantMapper.toMediaEntity(mediaDto);
+                        m.setVariant(variant);
                         if (mediaDto.getMediaId() != null) {
-                            media.setMedia(mediaRepository.findById(mediaDto.getMediaId())
+                            m.setMedia(mediaRepository.findById(mediaDto.getMediaId())
                                     .orElseThrow(() -> new ResourceNotFoundException("Media", mediaDto.getMediaId())));
                         }
-                        variant.getMedia().add(media);
+                        incomingMedia.add(m);
                     }
-                }
 
-                if (varDto.getAttributeSelections() != null) {
-                    for (VariantAttributeSelectionDto selDto : varDto.getAttributeSelections()) {
-                        Attribute attr = attributeRepository.findBySlug(selDto.getAttributeSlug())
-                                .orElseThrow(() -> new ResourceNotFoundException("Attribute", "slug", selDto.getAttributeSlug()));
-                        
-                        AttributeValue attrVal = attr.getValues().stream()
-                                .filter(v -> v.getSlug().equals(selDto.getValueSlug()))
+                    // Remove old ones not in incoming
+                    if (variant.getMedia() != null) {
+                        variant.getMedia().removeIf(m -> incomingMedia.stream()
+                                .noneMatch(im -> im.getMedia().getId().equals(m.getMedia().getId())));
+                    }
+
+                    // Add or update incoming ones
+                    for (VariantMedia im : incomingMedia) {
+                        VariantMedia existing = variant.getMedia().stream()
+                                .filter(m -> m.getMedia().getId().equals(im.getMedia().getId()))
                                 .findFirst()
-                                .orElseThrow(() -> new ResourceNotFoundException("AttributeValue", "slug", selDto.getValueSlug()));
+                                .orElse(null);
 
-                        VariantAttributeValue vav = new VariantAttributeValue();
-                        vav.setVariant(variant);
-                        vav.setAttribute(attr);
-                        vav.setAttributeValue(attrVal);
-                        variant.getAttributeValues().add(vav);
+                        if (existing == null) {
+                            variant.getMedia().add(im);
+                        } else {
+                            existing.setDisplayOrder(im.getDisplayOrder());
+                            existing.setRole(im.getRole());
+                        }
                     }
                 }
 
-                product.getVariants().add(variant);
+                // Bind dynamic AttributeSelection values
+                List<VariantAttributeSelectionDto> allSelections = new ArrayList<>();
+                if (varDto.getAttributeSelections() != null) {
+                    allSelections.addAll(varDto.getAttributeSelections());
+                }
+
+                // Append color selection if colorName flat property is present
+                if (varDto.getColorName() != null && !varDto.getColorName().trim().isEmpty()) {
+                    VariantAttributeSelectionDto colorSel = new VariantAttributeSelectionDto();
+                    colorSel.setAttributeSlug("color");
+                    colorSel.setAttributeName("Color");
+                    colorSel.setValue(varDto.getColorName());
+                    colorSel.setLabel(varDto.getColorName());
+                    colorSel.setValueSlug(slugify(varDto.getColorName()));
+                    colorSel.setColorHex(varDto.getColorHex());
+                    allSelections.add(colorSel);
+                }
+
+                // Remove old attribute values that are not in allSelections
+                if (variant.getAttributeValues() != null) {
+                    variant.getAttributeValues().removeIf(vav -> allSelections.stream()
+                            .noneMatch(sel -> sel.getAttributeSlug().equals(vav.getAttribute().getSlug())));
+                }
+
+                // Add or update attribute values
+                if (!allSelections.isEmpty()) {
+                    for (VariantAttributeSelectionDto selDto : allSelections) {
+                        AttributeValue attrVal = resolveOrCreateAttributeValue(
+                                selDto.getAttributeSlug(),
+                                selDto.getValueSlug(),
+                                selDto.getLabel(),
+                                selDto.getValue(),
+                                selDto.getColorHex()
+                        );
+                        Attribute attr = attrVal.getAttribute();
+
+                        // Find if it already exists
+                        VariantAttributeValue existingVav = variant.getAttributeValues().stream()
+                                .filter(vav -> vav.getAttribute().getSlug().equals(selDto.getAttributeSlug()))
+                                .findFirst()
+                                .orElse(null);
+
+                        if (existingVav == null) {
+                            VariantAttributeValue vav = new VariantAttributeValue();
+                            vav.setVariant(variant);
+                            vav.setAttribute(attr);
+                            vav.setAttributeValue(attrVal);
+                            variant.getAttributeValues().add(vav);
+                        } else {
+                            // Update attribute value choice reference
+                            existingVav.setAttributeValue(attrVal);
+                        }
+                    }
+                }
+
+                incomingVariants.add(variant);
+            }
+        }
+
+        // Remove variants that are not present in request
+        product.getVariants().removeIf(v -> incomingVariants.stream().noneMatch(iv -> iv.getSku() != null && iv.getSku().equals(v.getSku())));
+
+        // Add new ones
+        for (ProductVariant iv : incomingVariants) {
+            if (iv.getId() == null || product.getVariants().stream().noneMatch(v -> v.getId().equals(iv.getId()))) {
+                product.getVariants().add(iv);
             }
         }
 
@@ -431,14 +589,80 @@ public class ProductServiceImpl implements ProductService {
                             .map(v -> {
                                 VariantAttributeSelectionDto sel = new VariantAttributeSelectionDto();
                                 sel.setAttributeSlug(v.getAttribute().getSlug());
+                                sel.setAttributeName(v.getAttribute().getName());
+                                sel.setValue(v.getAttributeValue().getValue());
+                                sel.setLabel(v.getAttributeValue().getLabel());
                                 sel.setValueSlug(v.getAttributeValue().getSlug());
+                                sel.setColorHex(v.getAttributeValue().getColorHex());
+                                sel.setSortValue(v.getAttributeValue().getSortValue());
                                 return sel;
                             }).collect(Collectors.toList());
                     dto.setAttributeSelections(attributeSelections);
+
+                    // Populate flat colorName and colorHex for the frontend if present in attributes
+                    for (VariantAttributeValue vav : entity.getAttributeValues()) {
+                        if ("color".equals(vav.getAttribute().getSlug())) {
+                            dto.setColorName(vav.getAttributeValue().getValue());
+                            dto.setColorHex(vav.getAttributeValue().getColorHex());
+                        }
+                    }
                 }
             }
         }
         return response;
+    }
+
+    private String slugify(String input) {
+        if (input == null) return "";
+        return input.toLowerCase()
+                .replaceAll("[^a-z0-9\\s-]", "")
+                .replaceAll("\\s+", "-")
+                .replaceAll("-+", "-")
+                .trim();
+    }
+
+    private AttributeValue resolveOrCreateAttributeValue(String attrSlug, String valueSlug, String label, String value, String colorHex) {
+        Attribute attr = attributeRepository.findBySlug(attrSlug)
+                .orElseGet(() -> {
+                    Attribute newAttr = new Attribute();
+                    newAttr.setSlug(attrSlug);
+                    String name = attrSlug.substring(0, 1).toUpperCase() + attrSlug.substring(1);
+                    newAttr.setName(name);
+                    newAttr.setDataType("text");
+                    newAttr.setInputType("select");
+                    newAttr.setVariantDefining(true);
+                    newAttr.setFilterable(true);
+                    return attributeRepository.save(newAttr);
+                });
+
+        AttributeValue attrVal = attr.getValues().stream()
+                .filter(v -> v.getSlug().equals(valueSlug))
+                .findFirst()
+                .orElse(null);
+
+        if (attrVal == null) {
+            attrVal = new AttributeValue();
+            attrVal.setAttribute(attr);
+            attrVal.setSlug(valueSlug);
+            attrVal.setLabel(label != null ? label : valueSlug.toUpperCase());
+            attrVal.setValue(value != null ? value : valueSlug);
+            attrVal.setColorHex(colorHex);
+            attrVal.setDisplayOrder(0);
+            attr.getValues().add(attrVal);
+            attributeRepository.save(attr);
+
+            // Re-fetch to get populated id if generated on save
+            attr = attributeRepository.findBySlug(attrSlug).orElse(attr);
+            attrVal = attr.getValues().stream()
+                    .filter(v -> v.getSlug().equals(valueSlug))
+                    .findFirst()
+                    .orElse(attrVal);
+        } else if (colorHex != null && !colorHex.equals(attrVal.getColorHex())) {
+            attrVal.setColorHex(colorHex);
+            attributeRepository.save(attr);
+        }
+
+        return attrVal;
     }
 
 }

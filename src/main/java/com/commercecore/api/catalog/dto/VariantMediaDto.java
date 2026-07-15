@@ -16,6 +16,8 @@ public class VariantMediaDto {
     @NotNull(message = "Media ID is required")
     private UUID mediaId;
 
+    private String url;
+    private String altText;
     private String role = "gallery";
     private int displayOrder = 0;
 
