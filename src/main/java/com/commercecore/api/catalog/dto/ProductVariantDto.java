@@ -49,6 +49,10 @@ public class ProductVariantDto {
     // Scalable sizing parameters mapping (e.g. {"primary": {"value": "5x8", "unit": "ft"}})
     private Map<String, Object> size;
 
+    private String colorName;
+    private String colorHex;
+
+    @JsonProperty("isDefault")
     private boolean isDefault = false;
 
     @JsonProperty("isActive")
@@ -60,7 +64,31 @@ public class ProductVariantDto {
     private int displayOrder = 0;
 
     // Attribute mapping values list: e.g. [{"attributeSlug": "color", "valueSlug": "beige"}]
+    @JsonProperty("attributes")
     private List<VariantAttributeSelectionDto> attributeSelections;
+
+    @JsonProperty("attributeValues")
+    public List<Map<String, Object>> getAttributeValuesForFrontend() {
+        if (attributeSelections == null) return java.util.Collections.emptyList();
+        return attributeSelections.stream().map(sel -> {
+            Map<String, Object> map = new java.util.HashMap<>();
+            
+            Map<String, Object> attr = new java.util.HashMap<>();
+            attr.put("slug", sel.getAttributeSlug());
+            attr.put("name", sel.getAttributeName());
+            map.put("attribute", attr);
+            
+            Map<String, Object> val = new java.util.HashMap<>();
+            val.put("value", sel.getValue());
+            val.put("label", sel.getLabel());
+            val.put("slug", sel.getValueSlug());
+            val.put("colorHex", sel.getColorHex());
+            val.put("sortValue", sel.getSortValue());
+            map.put("attributeValue", val);
+            
+            return map;
+        }).collect(java.util.stream.Collectors.toList());
+    }
 
     // Associated media file UUIDs
     private List<VariantMediaDto> media;

@@ -23,9 +23,15 @@ public class ProductResponse {
     private String name;
     private String slug;
     private String description;
+    @com.fasterxml.jackson.annotation.JsonProperty("isBestseller")
     private boolean bestseller;
+
+    @com.fasterxml.jackson.annotation.JsonProperty("isFeatured")
     private boolean featured;
+
+    @com.fasterxml.jackson.annotation.JsonProperty("isActive")
     private boolean active;
+
     private int displayOrder;
     private Instant createdAt;
     private Instant updatedAt;

@@ -30,6 +30,9 @@ public interface ProductVariantMapper {
     ProductVariant toEntity(ProductVariantDto dto);
 
     // Media mapping helpers
+    @Mapping(target = "mediaId", source = "media.id")
+    @Mapping(target = "url", source = "media.url")
+    @Mapping(target = "altText", source = "media.altText")
     VariantMediaDto toMediaDto(VariantMedia media);
 
     @Mapping(target = "variant", ignore = true)
